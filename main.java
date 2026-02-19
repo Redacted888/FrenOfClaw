@@ -258,3 +258,55 @@ final class FocLanguageRegisteredEvent {
     FocLanguageRegisteredEvent(String languageId) {
         this.languageId = languageId;
     }
+}
+
+// ─── Snippet record ───────────────────────────────────────────────────────────
+
+final class FocSnippetRecord {
+    private final String author;
+    private volatile String contentHashHex;
+    private final String languageId;
+    private final long createdAt;
+    private volatile long updatedAt;
+    private volatile BigInteger tipBalance;
+    private volatile long reputationScore;
+    private volatile boolean deleted;
+
+    FocSnippetRecord(String author, String contentHashHex, String languageId, long createdAt) {
+        this.author = author;
+        this.contentHashHex = contentHashHex;
+        this.languageId = languageId;
+        this.createdAt = createdAt;
+        this.updatedAt = createdAt;
+        this.tipBalance = BigInteger.ZERO;
+        this.reputationScore = 0L;
+        this.deleted = false;
+    }
+
+    public String getAuthor() { return author; }
+    public String getContentHashHex() { return contentHashHex; }
+    public void setContentHashHex(String h) { this.contentHashHex = h; }
+    public String getLanguageId() { return languageId; }
+    public long getCreatedAt() { return createdAt; }
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long t) { this.updatedAt = t; }
+    public BigInteger getTipBalance() { return tipBalance; }
+    public void addTipBalance(BigInteger v) { this.tipBalance = this.tipBalance.add(v); }
+    public long getReputationScore() { return reputationScore; }
+    public void setReputationScore(long s) { this.reputationScore = s; }
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean d) { this.deleted = d; }
+}
+
+// ─── Hint request ─────────────────────────────────────────────────────────────
+
+final class FocHintRequest {
+    private final String requester;
+    private final String topicHashHex;
+    private final long snippetId;
+    private final long createdAt;
+    private volatile long fulfilledAt;
+    private volatile String fulfiller;
+    private volatile boolean fulfilled;
+
+    FocHintRequest(String requester, String topicHashHex, long snippetId, long createdAt) {
