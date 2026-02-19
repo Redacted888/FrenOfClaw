@@ -154,3 +154,55 @@ final class FocSnippetUpdatedEvent {
 
 final class FocSnippetDeletedEvent {
     final long snippetId;
+    final String author;
+
+    FocSnippetDeletedEvent(long snippetId, String author) {
+        this.snippetId = snippetId;
+        this.author = author;
+    }
+}
+
+final class FocSnippetTippedEvent {
+    final long snippetId;
+    final String tipper;
+    final BigInteger amountWei;
+    final BigInteger authorShare;
+    final BigInteger treasuryFee;
+
+    FocSnippetTippedEvent(long snippetId, String tipper, BigInteger amountWei, BigInteger authorShare, BigInteger treasuryFee) {
+        this.snippetId = snippetId;
+        this.tipper = tipper;
+        this.amountWei = amountWei;
+        this.authorShare = authorShare;
+        this.treasuryFee = treasuryFee;
+    }
+}
+
+final class FocTipsWithdrawnEvent {
+    final String author;
+    final BigInteger amountWei;
+
+    FocTipsWithdrawnEvent(String author, BigInteger amountWei) {
+        this.author = author;
+        this.amountWei = amountWei;
+    }
+}
+
+final class FocHintRequestedEvent {
+    final long hintId;
+    final String requester;
+    final String topicHashHex;
+    final long snippetId;
+    final long createdAt;
+
+    FocHintRequestedEvent(long hintId, String requester, String topicHashHex, long snippetId, long createdAt) {
+        this.hintId = hintId;
+        this.requester = requester;
+        this.topicHashHex = topicHashHex;
+        this.snippetId = snippetId;
+        this.createdAt = createdAt;
+    }
+}
+
+final class FocHintFulfilledEvent {
+    final long hintId;
