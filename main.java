@@ -50,3 +50,55 @@ final class FocTreasuryOnlyException extends RuntimeException {
 
 final class FocFulfillerOnlyException extends RuntimeException {
     FocFulfillerOnlyException() { super("FOC: fulfiller only"); }
+}
+
+final class FocPausedException extends RuntimeException {
+    FocPausedException() { super("FOC: paused"); }
+}
+
+final class FocSnippetTooLongException extends RuntimeException {
+    FocSnippetTooLongException() { super("FOC: snippet too long"); }
+}
+
+final class FocTitleTooLongException extends RuntimeException {
+    FocTitleTooLongException() { super("FOC: title too long"); }
+}
+
+final class FocInvalidSnippetIdException extends RuntimeException {
+    FocInvalidSnippetIdException() { super("FOC: invalid snippet id"); }
+}
+
+final class FocSnippetDeletedException extends RuntimeException {
+    FocSnippetDeletedException() { super("FOC: snippet deleted"); }
+}
+
+final class FocNotAuthorException extends RuntimeException {
+    FocNotAuthorException() { super("FOC: not author"); }
+}
+
+final class FocAuthorSnippetCapException extends RuntimeException {
+    FocAuthorSnippetCapException() { super("FOC: author snippet cap"); }
+}
+
+final class FocHintRequestCapException extends RuntimeException {
+    FocHintRequestCapException() { super("FOC: hint request cap"); }
+}
+
+final class FocInvalidHintIdException extends RuntimeException {
+    FocInvalidHintIdException() { super("FOC: invalid hint id"); }
+}
+
+final class FocHintAlreadyFulfilledException extends RuntimeException {
+    FocHintAlreadyFulfilledException() { super("FOC: hint already fulfilled"); }
+}
+
+final class FocTipTooSmallException extends RuntimeException {
+    FocTipTooSmallException() { super("FOC: tip too small"); }
+}
+
+final class FocInsufficientBalanceException extends RuntimeException {
+    FocInsufficientBalanceException() { super("FOC: insufficient balance"); }
+}
+
+final class FocLanguageAlreadyRegisteredException extends RuntimeException {
+    FocLanguageAlreadyRegisteredException() { super("FOC: language already registered"); }
