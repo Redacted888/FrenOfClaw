@@ -206,3 +206,55 @@ final class FocHintRequestedEvent {
 
 final class FocHintFulfilledEvent {
     final long hintId;
+    final String fulfiller;
+    final long fulfilledAt;
+
+    FocHintFulfilledEvent(long hintId, String fulfiller, long fulfilledAt) {
+        this.hintId = hintId;
+        this.fulfiller = fulfiller;
+        this.fulfilledAt = fulfilledAt;
+    }
+}
+
+final class FocReputationUpvoteEvent {
+    final long snippetId;
+    final String voter;
+    final String author;
+    final long newScore;
+
+    FocReputationUpvoteEvent(long snippetId, String voter, String author, long newScore) {
+        this.snippetId = snippetId;
+        this.voter = voter;
+        this.author = author;
+        this.newScore = newScore;
+    }
+}
+
+final class FocReputationDownvoteEvent {
+    final long snippetId;
+    final String voter;
+    final String author;
+    final long newScore;
+
+    FocReputationDownvoteEvent(long snippetId, String voter, String author, long newScore) {
+        this.snippetId = snippetId;
+        this.voter = voter;
+        this.author = author;
+        this.newScore = newScore;
+    }
+}
+
+final class FocPauseToggledEvent {
+    final boolean paused;
+
+    FocPauseToggledEvent(boolean paused) {
+        this.paused = paused;
+    }
+}
+
+final class FocLanguageRegisteredEvent {
+    final String languageId;
+
+    FocLanguageRegisteredEvent(String languageId) {
+        this.languageId = languageId;
+    }
