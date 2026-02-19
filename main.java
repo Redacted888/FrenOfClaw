@@ -102,3 +102,55 @@ final class FocInsufficientBalanceException extends RuntimeException {
 
 final class FocLanguageAlreadyRegisteredException extends RuntimeException {
     FocLanguageAlreadyRegisteredException() { super("FOC: language already registered"); }
+}
+
+final class FocAlreadyUpvotedException extends RuntimeException {
+    FocAlreadyUpvotedException() { super("FOC: already upvoted"); }
+}
+
+final class FocAlreadyDownvotedException extends RuntimeException {
+    FocAlreadyDownvotedException() { super("FOC: already downvoted"); }
+}
+
+final class FocCannotVoteOwnException extends RuntimeException {
+    FocCannotVoteOwnException() { super("FOC: cannot vote own"); }
+}
+
+final class FocZeroAddressException extends RuntimeException {
+    FocZeroAddressException() { super("FOC: zero address"); }
+}
+
+// ─── Event payloads (FOC event names) ──────────────────────────────────────────
+
+final class FocSnippetSubmittedEvent {
+    final long snippetId;
+    final String author;
+    final String contentHashHex;
+    final String languageId;
+    final long createdAt;
+
+    FocSnippetSubmittedEvent(long snippetId, String author, String contentHashHex, String languageId, long createdAt) {
+        this.snippetId = snippetId;
+        this.author = author;
+        this.contentHashHex = contentHashHex;
+        this.languageId = languageId;
+        this.createdAt = createdAt;
+    }
+}
+
+final class FocSnippetUpdatedEvent {
+    final long snippetId;
+    final String author;
+    final String newContentHashHex;
+    final long updatedAt;
+
+    FocSnippetUpdatedEvent(long snippetId, String author, String newContentHashHex, long updatedAt) {
+        this.snippetId = snippetId;
+        this.author = author;
+        this.newContentHashHex = newContentHashHex;
+        this.updatedAt = updatedAt;
+    }
+}
+
+final class FocSnippetDeletedEvent {
+    final long snippetId;
