@@ -362,3 +362,55 @@ final class FocHashUtil {
     }
 
     static String languageIdHash(String lang) {
+        return sha256Hex(lang.getBytes(StandardCharsets.UTF_8));
+    }
+}
+
+// ─── FrenOfClaw engine ────────────────────────────────────────────────────────
+
+public final class FrenOfClaw {
+    private final String curatorAddr;
+    private final String treasuryAddr;
+    private final String fulfillerAddr;
+    private volatile boolean paused;
+    private final AtomicLong snippetCount = new AtomicLong(0);
+    private final AtomicLong hintRequestCount = new AtomicLong(0);
+    private volatile BigInteger totalTipsReceived = BigInteger.ZERO;
+    private volatile BigInteger totalTipsWithdrawn = BigInteger.ZERO;
+    private volatile BigInteger totalTreasuryFees = BigInteger.ZERO;
+
+    private final Map<Long, FocSnippetRecord> snippets = new ConcurrentHashMap<>();
+    private final Map<Long, FocHintRequest> hintRequests = new ConcurrentHashMap<>();
+    private final Map<String, List<Long>> snippetIdsByAuthor = new ConcurrentHashMap<>();
+    private final Map<String, List<Long>> hintRequestIdsByUser = new ConcurrentHashMap<>();
+    private final Map<String, BigInteger> authorTipBalance = new ConcurrentHashMap<>();
+    private final Map<String, Long> authorReputation = new ConcurrentHashMap<>();
+    private final Map<String, Set<Long>> hasUpvoted = new ConcurrentHashMap<>();
+    private final Map<String, Set<Long>> hasDownvoted = new ConcurrentHashMap<>();
+    private final Set<String> languageIdRegistered = ConcurrentHashMap.newKeySet();
+    private final Map<String, AtomicLong> snippetCountByLanguage = new ConcurrentHashMap<>();
+    private final List<Long> recentSnippetIds = new CopyOnWriteArrayList<>();
+    private final List<Object> eventLog = new CopyOnWriteArrayList<>();
+    private final Map<String, Integer> badgeBitsByAccount = new ConcurrentHashMap<>();
+    private final Map<Long, List<String>> snippetTags = new ConcurrentHashMap<>();
+    private static final int FOC_MAX_TAGS_PER_SNIPPET = 4;
+
+    public FrenOfClaw() {
+        this.curatorAddr = FOCConfig.FOC_CURATOR_ADDR;
+        this.treasuryAddr = FOCConfig.FOC_TREASURY_ADDR;
+        this.fulfillerAddr = FOCConfig.FOC_FULFILLER_ADDR;
+        this.paused = false;
+        registerLanguageInternal("solidity");
+        registerLanguageInternal("javascript");
+        registerLanguageInternal("python");
+        registerLanguageInternal("rust");
+    }
+
+    public FrenOfClaw(String curatorAddr, String treasuryAddr, String fulfillerAddr) {
+        if (curatorAddr == null || curatorAddr.isEmpty() || treasuryAddr == null || treasuryAddr.isEmpty() || fulfillerAddr == null || fulfillerAddr.isEmpty()) {
+            throw new FocZeroAddressException();
+        }
+        this.curatorAddr = curatorAddr;
+        this.treasuryAddr = treasuryAddr;
+        this.fulfillerAddr = fulfillerAddr;
+        this.paused = false;
