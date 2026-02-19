@@ -466,3 +466,55 @@ public final class FrenOfClaw {
         pushRecentSnippet(snippetId);
 
         eventLog.add(new FocSnippetSubmittedEvent(snippetId, author, contentHashHex, langHash, ts));
+        return snippetId;
+    }
+
+    private void pushRecentSnippet(long snippetId) {
+        synchronized (recentSnippetIds) {
+            recentSnippetIds.add(0, snippetId);
+            while (recentSnippetIds.size() > FOCConfig.FOC_RECENT_QUEUE_SIZE) {
+                recentSnippetIds.remove(recentSnippetIds.size() - 1);
+            }
+        }
+    }
+
+    public void updateSnippet(long snippetId, String author, byte[] newContent) {
+        requireNotPaused();
+        FocSnippetRecord s = snippets.get(snippetId);
+        if (s == null) throw new FocInvalidSnippetIdException();
+        if (s.isDeleted()) throw new FocSnippetDeletedException();
+        if (!s.getAuthor().equals(author)) throw new FocNotAuthorException();
+        if (newContent.length > FOCConfig.FOC_MAX_SNIPPET_BYTES) throw new FocSnippetTooLongException();
+
+        String newHash = FocHashUtil.contentHashHex(newContent);
+        s.setContentHashHex(newHash);
+        s.setUpdatedAt(System.currentTimeMillis());
+        eventLog.add(new FocSnippetUpdatedEvent(snippetId, author, newHash, s.getUpdatedAt()));
+    }
+
+    public void deleteSnippet(long snippetId, String author) {
+        FocSnippetRecord s = snippets.get(snippetId);
+        if (s == null) throw new FocInvalidSnippetIdException();
+        if (s.isDeleted()) throw new FocSnippetDeletedException();
+        if (!s.getAuthor().equals(author)) throw new FocNotAuthorException();
+
+        s.setDeleted(true);
+        snippetCountByLanguage.get(s.getLanguageId()).decrementAndGet();
+        eventLog.add(new FocSnippetDeletedEvent(snippetId, author));
+    }
+
+    public void tipSnippet(long snippetId, String tipper, BigInteger amountWei) {
+        requireNotPaused();
+        if (amountWei.compareTo(BigInteger.valueOf(FOCConfig.FOC_MIN_TIP_WEI)) < 0) throw new FocTipTooSmallException();
+        FocSnippetRecord s = snippets.get(snippetId);
+        if (s == null) throw new FocInvalidSnippetIdException();
+        if (s.isDeleted()) throw new FocSnippetDeletedException();
+
+        BigInteger fee = amountWei.multiply(BigInteger.valueOf(FOCConfig.FOC_TREASURY_FEE_BPS)).divide(BigInteger.valueOf(FOCConfig.FOC_BPS_DENOM));
+        BigInteger toAuthor = amountWei.subtract(fee);
+        s.addTipBalance(toAuthor);
+        authorTipBalance.merge(s.getAuthor(), toAuthor, BigInteger::add);
+        totalTipsReceived = totalTipsReceived.add(amountWei);
+        totalTreasuryFees = totalTreasuryFees.add(fee);
+        eventLog.add(new FocSnippetTippedEvent(snippetId, tipper, amountWei, toAuthor, fee));
+    }
