@@ -414,3 +414,55 @@ public final class FrenOfClaw {
         this.treasuryAddr = treasuryAddr;
         this.fulfillerAddr = fulfillerAddr;
         this.paused = false;
+        registerLanguageInternal("solidity");
+        registerLanguageInternal("javascript");
+        registerLanguageInternal("python");
+        registerLanguageInternal("rust");
+    }
+
+    private void registerLanguageInternal(String lang) {
+        String id = FocHashUtil.languageIdHash(lang);
+        languageIdRegistered.add(id);
+        snippetCountByLanguage.put(id, new AtomicLong(0));
+    }
+
+    public void requireCurator(String caller) {
+        if (!curatorAddr.equalsIgnoreCase(caller)) throw new FocCuratorOnlyException();
+    }
+
+    public void requireTreasury(String caller) {
+        if (!treasuryAddr.equalsIgnoreCase(caller)) throw new FocTreasuryOnlyException();
+    }
+
+    public void requireFulfiller(String caller) {
+        if (!fulfillerAddr.equalsIgnoreCase(caller)) throw new FocFulfillerOnlyException();
+    }
+
+    public void requireNotPaused() {
+        if (paused) throw new FocPausedException();
+    }
+
+    public long submitSnippet(String author, byte[] content, String languageId, byte[] title) {
+        requireNotPaused();
+        if (content.length > FOCConfig.FOC_MAX_SNIPPET_BYTES) throw new FocSnippetTooLongException();
+        if (title != null && title.length > FOCConfig.FOC_MAX_TITLE_BYTES) throw new FocTitleTooLongException();
+        String langHash = FocHashUtil.languageIdHash(languageId);
+        if (!languageIdRegistered.contains(langHash)) throw new FocLanguageAlreadyRegisteredException();
+
+        List<Long> authorIds = snippetIdsByAuthor.computeIfAbsent(author, k -> new CopyOnWriteArrayList<>());
+        long activeCount = authorIds.stream().filter(id -> {
+            FocSnippetRecord r = snippets.get(id);
+            return r != null && !r.isDeleted();
+        }).count();
+        if (activeCount >= FOCConfig.FOC_MAX_SNIPPETS_PER_AUTHOR) throw new FocAuthorSnippetCapException();
+
+        long snippetId = snippetCount.incrementAndGet();
+        String contentHashHex = FocHashUtil.contentHashHex(content);
+        long ts = System.currentTimeMillis();
+        FocSnippetRecord rec = new FocSnippetRecord(author, contentHashHex, langHash, ts);
+        snippets.put(snippetId, rec);
+        authorIds.add(snippetId);
+        snippetCountByLanguage.get(langHash).incrementAndGet();
+        pushRecentSnippet(snippetId);
+
+        eventLog.add(new FocSnippetSubmittedEvent(snippetId, author, contentHashHex, langHash, ts));
