@@ -310,3 +310,55 @@ final class FocHintRequest {
     private volatile boolean fulfilled;
 
     FocHintRequest(String requester, String topicHashHex, long snippetId, long createdAt) {
+        this.requester = requester;
+        this.topicHashHex = topicHashHex;
+        this.snippetId = snippetId;
+        this.createdAt = createdAt;
+        this.fulfilledAt = 0L;
+        this.fulfiller = null;
+        this.fulfilled = false;
+    }
+
+    public String getRequester() { return requester; }
+    public String getTopicHashHex() { return topicHashHex; }
+    public long getSnippetId() { return snippetId; }
+    public long getCreatedAt() { return createdAt; }
+    public long getFulfilledAt() { return fulfilledAt; }
+    public void setFulfilledAt(long t) { this.fulfilledAt = t; }
+    public String getFulfiller() { return fulfiller; }
+    public void setFulfiller(String f) { this.fulfiller = f; }
+    public boolean isFulfilled() { return fulfilled; }
+    public void setFulfilled(boolean f) { this.fulfilled = f; }
+}
+
+// ─── Hash helper ─────────────────────────────────────────────────────────────
+
+final class FocHashUtil {
+    private static final MessageDigest SHA256;
+
+    static {
+        try {
+            SHA256 = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 unavailable", e);
+        }
+    }
+
+    static String sha256Hex(byte[] input) {
+        byte[] hash = SHA256.digest(input);
+        StringBuilder sb = new StringBuilder(hash.length * 2);
+        for (byte b : hash) {
+            sb.append(String.format("%02x", b & 0xff));
+        }
+        return sb.toString();
+    }
+
+    static String contentHashHex(byte[] content) {
+        return sha256Hex(content);
+    }
+
+    static String topicHashHex(String topic) {
+        return sha256Hex(topic.getBytes(StandardCharsets.UTF_8));
+    }
+
+    static String languageIdHash(String lang) {
