@@ -570,3 +570,55 @@ public final class FrenOfClaw {
         languageIdRegistered.add(languageIdHash);
         snippetCountByLanguage.put(languageIdHash, new AtomicLong(0));
         eventLog.add(new FocLanguageRegisteredEvent(languageIdHash));
+    }
+
+    public void upvoteSnippet(long snippetId, String voter) {
+        requireNotPaused();
+        FocSnippetRecord s = snippets.get(snippetId);
+        if (s == null) throw new FocInvalidSnippetIdException();
+        if (s.isDeleted()) throw new FocSnippetDeletedException();
+        if (s.getAuthor().equals(voter)) throw new FocCannotVoteOwnException();
+
+        Set<Long> up = hasUpvoted.computeIfAbsent(voter, k -> ConcurrentHashMap.newKeySet());
+        if (up.contains(snippetId)) throw new FocAlreadyUpvotedException();
+        up.add(snippetId);
+        Set<Long> down = hasDownvoted.get(voter);
+        if (down != null && down.remove(snippetId)) {
+            s.setReputationScore(Math.max(0, s.getReputationScore() + FOCConfig.FOC_REPUTATION_DOWN_DELTA));
+        }
+        s.setReputationScore(s.getReputationScore() + FOCConfig.FOC_REPUTATION_UP_DELTA);
+        authorReputation.put(s.getAuthor(), recomputeAuthorReputation(s.getAuthor()));
+        eventLog.add(new FocReputationUpvoteEvent(snippetId, voter, s.getAuthor(), s.getReputationScore()));
+    }
+
+    public void downvoteSnippet(long snippetId, String voter) {
+        requireNotPaused();
+        FocSnippetRecord s = snippets.get(snippetId);
+        if (s == null) throw new FocInvalidSnippetIdException();
+        if (s.isDeleted()) throw new FocSnippetDeletedException();
+        if (s.getAuthor().equals(voter)) throw new FocCannotVoteOwnException();
+
+        Set<Long> downSet = hasDownvoted.computeIfAbsent(voter, k -> ConcurrentHashMap.newKeySet());
+        if (downSet.contains(snippetId)) throw new FocAlreadyDownvotedException();
+        downSet.add(snippetId);
+        Set<Long> upSet = hasUpvoted.get(voter);
+        if (upSet != null && upSet.remove(snippetId)) {
+            s.setReputationScore(Math.max(0, s.getReputationScore() - FOCConfig.FOC_REPUTATION_UP_DELTA));
+        }
+        s.setReputationScore(Math.max(0, s.getReputationScore() - FOCConfig.FOC_REPUTATION_DOWN_DELTA));
+        authorReputation.put(s.getAuthor(), recomputeAuthorReputation(s.getAuthor()));
+        eventLog.add(new FocReputationDownvoteEvent(snippetId, voter, s.getAuthor(), s.getReputationScore()));
+    }
+
+    private long recomputeAuthorReputation(String author) {
+        List<Long> ids = snippetIdsByAuthor.getOrDefault(author, Collections.emptyList());
+        long total = 0;
+        for (Long id : ids) {
+            FocSnippetRecord r = snippets.get(id);
+            if (r != null && !r.isDeleted()) total += r.getReputationScore();
+        }
+        return total;
+    }
+
+    public void setPaused(boolean paused, String caller) {
+        requireCurator(caller);
