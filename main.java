@@ -726,3 +726,55 @@ public final class FrenOfClaw {
             try {
                 long id = submitSnippet(author, contents.get(i), languageId, titles.get(i));
                 ids.add(id);
+            } catch (RuntimeException e) {
+                break;
+            }
+        }
+        return ids;
+    }
+
+    public void tipSnippetBatch(List<Long> snippetIds, String tipper, List<BigInteger> amounts) {
+        if (snippetIds.size() != amounts.size() || snippetIds.size() > 16) return;
+        for (int i = 0; i < snippetIds.size(); i++) {
+            tipSnippet(snippetIds.get(i), tipper, amounts.get(i));
+        }
+    }
+
+    public Map<Long, FocSnippetRecord> getSnippetBatch(List<Long> ids) {
+        Map<Long, FocSnippetRecord> out = new LinkedHashMap<>();
+        for (Long id : ids) {
+            FocSnippetRecord r = snippets.get(id);
+            if (r != null) out.put(id, r);
+        }
+        return out;
+    }
+
+    public List<FocHintRequest> getHintRequestBatch(List<Long> ids) {
+        List<FocHintRequest> out = new ArrayList<>();
+        for (Long id : ids) {
+            FocHintRequest h = hintRequests.get(id);
+            if (h != null) out.add(h);
+        }
+        return out;
+    }
+
+    public Map<String, Object> getAuthorStats(String author) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("tipBalance", getAuthorTipBalance(author).toString());
+        m.put("reputation", getAuthorReputation(author));
+        m.put("snippetCount", getSnippetIdsByAuthor(author).size());
+        m.put("badgeBits", getBadgeBits(author));
+        return m;
+    }
+
+    public long getActiveSnippetCount() {
+        return snippets.values().stream().filter(r -> !r.isDeleted()).count();
+    }
+
+    public long getFulfilledHintCount() {
+        return hintRequests.values().stream().filter(FocHintRequest::isFulfilled).count();
+    }
+
+    public List<Long> getSnippetIdsByLanguage(String languageIdHash) {
+        List<Long> out = new ArrayList<>();
+        for (Map.Entry<Long, FocSnippetRecord> e : snippets.entrySet()) {
