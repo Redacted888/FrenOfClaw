@@ -518,3 +518,55 @@ public final class FrenOfClaw {
         totalTreasuryFees = totalTreasuryFees.add(fee);
         eventLog.add(new FocSnippetTippedEvent(snippetId, tipper, amountWei, toAuthor, fee));
     }
+
+    public BigInteger withdrawTips(String author) {
+        BigInteger balance = authorTipBalance.getOrDefault(author, BigInteger.ZERO);
+        if (balance.compareTo(BigInteger.ZERO) <= 0) throw new FocInsufficientBalanceException();
+        authorTipBalance.put(author, BigInteger.ZERO);
+        totalTipsWithdrawn = totalTipsWithdrawn.add(balance);
+        eventLog.add(new FocTipsWithdrawnEvent(author, balance));
+        return balance;
+    }
+
+    public long requestHint(String requester, String topicHashHex, long snippetId) {
+        requireNotPaused();
+        List<Long> userHints = hintRequestIdsByUser.computeIfAbsent(requester, k -> new CopyOnWriteArrayList<>());
+        long openCount = userHints.stream().filter(id -> {
+            FocHintRequest h = hintRequests.get(id);
+            return h != null && !h.isFulfilled();
+        }).count();
+        if (openCount >= FOCConfig.FOC_MAX_HINT_REQUESTS_PER_USER) throw new FocHintRequestCapException();
+        if (snippetId != 0) {
+            FocSnippetRecord s = snippets.get(snippetId);
+            if (s == null || s.isDeleted()) throw new FocInvalidSnippetIdException();
+        }
+
+        long hintId = hintRequestCount.incrementAndGet();
+        long ts = System.currentTimeMillis();
+        FocHintRequest h = new FocHintRequest(requester, topicHashHex, snippetId, ts);
+        hintRequests.put(hintId, h);
+        userHints.add(hintId);
+        eventLog.add(new FocHintRequestedEvent(hintId, requester, topicHashHex, snippetId, ts));
+        return hintId;
+    }
+
+    public void fulfillHint(long hintId, String fulfiller) {
+        requireFulfiller(fulfiller);
+        requireNotPaused();
+        FocHintRequest h = hintRequests.get(hintId);
+        if (h == null) throw new FocInvalidHintIdException();
+        if (h.isFulfilled()) throw new FocHintAlreadyFulfilledException();
+
+        long ts = System.currentTimeMillis();
+        h.setFulfilled(true);
+        h.setFulfilledAt(ts);
+        h.setFulfiller(fulfiller);
+        eventLog.add(new FocHintFulfilledEvent(hintId, fulfiller, ts));
+    }
+
+    public void registerLanguage(String languageIdHash, String curator) {
+        requireCurator(curator);
+        if (languageIdRegistered.contains(languageIdHash)) throw new FocLanguageAlreadyRegisteredException();
+        languageIdRegistered.add(languageIdHash);
+        snippetCountByLanguage.put(languageIdHash, new AtomicLong(0));
+        eventLog.add(new FocLanguageRegisteredEvent(languageIdHash));
