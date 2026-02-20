@@ -830,3 +830,55 @@ public final class FrenOfClaw {
         m.put("hintRequestCount", hintRequestCount.get());
         m.put("totalTipsReceived", totalTipsReceived.toString());
         m.put("totalTipsWithdrawn", totalTipsWithdrawn.toString());
+        m.put("totalTreasuryFees", totalTreasuryFees.toString());
+        m.put("paused", paused);
+        m.put("version", FOCConfig.FOC_VERSION);
+        return m;
+    }
+
+    public static String computeContentHashHex(byte[] content) {
+        return FocHashUtil.contentHashHex(content);
+    }
+
+    public static String computeTopicHashHex(String topic) {
+        return FocHashUtil.topicHashHex(topic);
+    }
+
+    public static String computeLanguageIdHash(String lang) {
+        return FocHashUtil.languageIdHash(lang);
+    }
+
+    public static void main(String[] args) {
+        FrenOfClaw engine = new FrenOfClaw();
+        String alice = "0xAlice001";
+        String bob = "0xBob002";
+        long id = engine.submitSnippet(alice, "function foo() {}".getBytes(StandardCharsets.UTF_8), "solidity", "Foo".getBytes(StandardCharsets.UTF_8));
+        System.out.println("Submitted snippet " + id);
+        engine.tipSnippet(id, bob, BigInteger.valueOf(100));
+        System.out.println("Tipped 100 wei");
+        long hintId = engine.requestHint(bob, FocHashUtil.topicHashHex("reentrancy"), id);
+        System.out.println("Requested hint " + hintId);
+        engine.fulfillHint(hintId, FOCConfig.FOC_FULFILLER_ADDR);
+        System.out.println("Fulfilled hint");
+        System.out.println("Stats: " + engine.getGlobalStats());
+    }
+}
+
+// ─── Badge and tag support (cheaper: fewer slots) ─────────────────────────────
+
+final class FocBadgeEvent {
+    final String account;
+    final int badgeSlot;
+    final long atBlockMs;
+
+    FocBadgeEvent(String account, int badgeSlot, long atBlockMs) {
+        this.account = account;
+        this.badgeSlot = badgeSlot;
+        this.atBlockMs = atBlockMs;
+    }
+}
+
+final class FocSnippetTaggedEvent {
+    final long snippetId;
+    final String tagIdHex;
+
