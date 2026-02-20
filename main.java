@@ -674,3 +674,55 @@ public final class FrenOfClaw {
     }
 
     public long getSnippetCountByLanguage(String languageIdHash) {
+        AtomicLong c = snippetCountByLanguage.get(languageIdHash);
+        return c == null ? 0 : c.get();
+    }
+
+    public List<Object> getEventLog() {
+        return new ArrayList<>(eventLog);
+    }
+
+    public void awardBadge(String account, int badgeSlot, String curator) {
+        requireCurator(curator);
+        if (badgeSlot < 0 || badgeSlot >= FOCConfig.FOC_BADGE_SLOTS) return;
+        int bits = badgeBitsByAccount.getOrDefault(account, 0);
+        bits |= (1 << badgeSlot);
+        badgeBitsByAccount.put(account, bits);
+        eventLog.add(new FocBadgeEvent(account, badgeSlot, System.currentTimeMillis()));
+    }
+
+    public int getBadgeBits(String account) {
+        return badgeBitsByAccount.getOrDefault(account, 0);
+    }
+
+    public boolean hasBadge(String account, int slot) {
+        if (slot < 0 || slot >= FOCConfig.FOC_BADGE_SLOTS) return false;
+        int bits = badgeBitsByAccount.getOrDefault(account, 0);
+        return (bits & (1 << slot)) != 0;
+    }
+
+    public void addSnippetTag(long snippetId, String tagIdHex, String author) {
+        FocSnippetRecord s = snippets.get(snippetId);
+        if (s == null) throw new FocInvalidSnippetIdException();
+        if (s.isDeleted()) throw new FocSnippetDeletedException();
+        if (!s.getAuthor().equals(author)) throw new FocNotAuthorException();
+        List<String> tags = snippetTags.computeIfAbsent(snippetId, k -> new CopyOnWriteArrayList<>());
+        if (tags.size() >= FOC_MAX_TAGS_PER_SNIPPET) return;
+        if (!tags.contains(tagIdHex)) {
+            tags.add(tagIdHex);
+            eventLog.add(new FocSnippetTaggedEvent(snippetId, tagIdHex));
+        }
+    }
+
+    public List<String> getSnippetTags(long snippetId) {
+        List<String> t = snippetTags.get(snippetId);
+        return t == null ? Collections.emptyList() : new ArrayList<>(t);
+    }
+
+    public List<Long> submitSnippetBatch(String author, List<byte[]> contents, String languageId, List<byte[]> titles) {
+        if (contents.size() != titles.size() || contents.size() > 12) return Collections.emptyList();
+        List<Long> ids = new ArrayList<>();
+        for (int i = 0; i < contents.size(); i++) {
+            try {
+                long id = submitSnippet(author, contents.get(i), languageId, titles.get(i));
+                ids.add(id);
