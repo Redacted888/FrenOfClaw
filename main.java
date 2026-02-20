@@ -778,3 +778,55 @@ public final class FrenOfClaw {
     public List<Long> getSnippetIdsByLanguage(String languageIdHash) {
         List<Long> out = new ArrayList<>();
         for (Map.Entry<Long, FocSnippetRecord> e : snippets.entrySet()) {
+            if (!e.getValue().isDeleted() && e.getValue().getLanguageId().equals(languageIdHash)) {
+                out.add(e.getKey());
+            }
+        }
+        return out;
+    }
+
+    public Optional<FocSnippetRecord> findSnippetByContentHash(String contentHashHex) {
+        return snippets.entrySet().stream()
+                .filter(e -> !e.getValue().isDeleted() && e.getValue().getContentHashHex().equals(contentHashHex))
+                .map(Map.Entry::getValue)
+                .findFirst();
+    }
+
+    public List<Long> getOpenHintIdsForUser(String user) {
+        return hintRequestIdsByUser.getOrDefault(user, Collections.emptyList()).stream()
+                .filter(id -> {
+                    FocHintRequest h = hintRequests.get(id);
+                    return h != null && !h.isFulfilled();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public int getConfigMaxSnippetBytes() { return FOCConfig.FOC_MAX_SNIPPET_BYTES; }
+    public int getConfigMaxTitleBytes() { return FOCConfig.FOC_MAX_TITLE_BYTES; }
+    public int getConfigMinTipWei() { return FOCConfig.FOC_MIN_TIP_WEI; }
+    public int getConfigTreasuryFeeBps() { return FOCConfig.FOC_TREASURY_FEE_BPS; }
+    public int getConfigBadgeSlots() { return FOCConfig.FOC_BADGE_SLOTS; }
+    public int getConfigVersion() { return FOCConfig.FOC_VERSION; }
+
+    public Map<String, Object> getConfigSnapshot() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("maxSnippetBytes", FOCConfig.FOC_MAX_SNIPPET_BYTES);
+        m.put("maxTitleBytes", FOCConfig.FOC_MAX_TITLE_BYTES);
+        m.put("minTipWei", FOCConfig.FOC_MIN_TIP_WEI);
+        m.put("maxSnippetsPerAuthor", FOCConfig.FOC_MAX_SNIPPETS_PER_AUTHOR);
+        m.put("maxHintRequestsPerUser", FOCConfig.FOC_MAX_HINT_REQUESTS_PER_USER);
+        m.put("treasuryFeeBps", FOCConfig.FOC_TREASURY_FEE_BPS);
+        m.put("badgeSlots", FOCConfig.FOC_BADGE_SLOTS);
+        m.put("version", FOCConfig.FOC_VERSION);
+        m.put("curatorAddr", curatorAddr);
+        m.put("treasuryAddr", treasuryAddr);
+        m.put("fulfillerAddr", fulfillerAddr);
+        return m;
+    }
+
+    public Map<String, Object> getGlobalStats() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("snippetCount", snippetCount.get());
+        m.put("hintRequestCount", hintRequestCount.get());
+        m.put("totalTipsReceived", totalTipsReceived.toString());
+        m.put("totalTipsWithdrawn", totalTipsWithdrawn.toString());
