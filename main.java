@@ -622,3 +622,55 @@ public final class FrenOfClaw {
 
     public void setPaused(boolean paused, String caller) {
         requireCurator(caller);
+        this.paused = paused;
+        eventLog.add(new FocPauseToggledEvent(paused));
+    }
+
+    public boolean isPaused() { return paused; }
+    public String getCuratorAddr() { return curatorAddr; }
+    public String getTreasuryAddr() { return treasuryAddr; }
+    public String getFulfillerAddr() { return fulfillerAddr; }
+    public long getSnippetCount() { return snippetCount.get(); }
+    public long getHintRequestCount() { return hintRequestCount.get(); }
+    public BigInteger getTotalTipsReceived() { return totalTipsReceived; }
+    public BigInteger getTotalTipsWithdrawn() { return totalTipsWithdrawn; }
+    public BigInteger getTotalTreasuryFees() { return totalTreasuryFees; }
+
+    public FocSnippetRecord getSnippet(long snippetId) {
+        return snippets.get(snippetId);
+    }
+
+    public FocHintRequest getHintRequest(long hintId) {
+        return hintRequests.get(hintId);
+    }
+
+    public BigInteger getAuthorTipBalance(String author) {
+        return authorTipBalance.getOrDefault(author, BigInteger.ZERO);
+    }
+
+    public long getAuthorReputation(String author) {
+        return authorReputation.getOrDefault(author, 0L);
+    }
+
+    public List<Long> getSnippetIdsByAuthor(String author) {
+        return snippetIdsByAuthor.getOrDefault(author, Collections.emptyList()).stream()
+                .filter(id -> {
+                    FocSnippetRecord r = snippets.get(id);
+                    return r != null && !r.isDeleted();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<Long> getRecentSnippetIds() {
+        return new ArrayList<>(recentSnippetIds);
+    }
+
+    public List<Long> getHintRequestIdsByUser(String user) {
+        return new ArrayList<>(hintRequestIdsByUser.getOrDefault(user, Collections.emptyList()));
+    }
+
+    public boolean isLanguageRegistered(String languageIdHash) {
+        return languageIdRegistered.contains(languageIdHash);
+    }
+
+    public long getSnippetCountByLanguage(String languageIdHash) {
